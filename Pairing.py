@@ -1,6 +1,6 @@
 import math
 
-#ATTENTION! This code is from https://github.com/perrygeo/pairing/tree/master and is not my property.
+#ATTENTION! The code used in this specific file is from https://github.com/perrygeo/pairing/tree/master and is not my property.
 
 
 
