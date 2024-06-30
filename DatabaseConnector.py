@@ -7,20 +7,20 @@ class DatabaseConnector:
 
     def __init__(self):
         self.mydb = mysql.connector.connect(
-            host="-----",
-            user="-----",
-            password="-----"
+            host="-",
+            user="-",
+            password="-"
         )
         self.cursor = self.mydb.cursor()
-        self.cursor.execute("USE chat;")
+        self.cursor.execute("USE chatserver;")
 
 
     def auth(self, username, password):
-        self.cursor.execute("SELECT * FROM Users WHERE Username='" + username + "' AND Password='" + password + "';")
+        self.cursor.execute("SELECT * FROM User WHERE username='" + username + "' AND password='" + password + "';")
         myresult = self.cursor.fetchall()
         row = [item[0] for item in myresult]
         if len(row) == 0:
-            print("Auth unsuccessful")
+            print("Auth unsuccessful.")
             return -1
         else:
             return int(row[0])
@@ -31,7 +31,7 @@ class DatabaseConnector:
 
 
     def writemsg(self, senderid, receiverid, text):
-        sql = "INSERT INTO PrivateMessages (Chatid,Senderid,Text) VALUES ('"+str(self.getchatid(senderid,receiverid))+"','"+str(senderid)+"','"+text+"');"
+        sql = "INSERT INTO Pm (SenderId,ReceiverId,Message) VALUES ('"+senderid+"','"+receiverid+"','"+text+"');"
         #print(sql)
         self.cursor.execute(sql)
         self.mydb.commit()

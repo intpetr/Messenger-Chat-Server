@@ -1,7 +1,12 @@
+import base64
 import socket
 import sys
 import threading
 import time
+import gzip
+import zlib
+import pickle
+import random
 
 
 
@@ -10,6 +15,7 @@ from time import sleep
 
 from DatabaseConnector import DatabaseConnector
 from OnlinePool import OnlinePool
+from WebsocketAuth import WebsocketAuth
 
 
 class SocketServer:
@@ -19,17 +25,79 @@ class SocketServer:
         self.db = DatabaseConnector()
         pool = OnlinePool()
         self.online = pool
+        self.wsauth = WebsocketAuth()
 
     def logmessage(self,senderid,receiverid,text):
         self.db.writemsg(senderid,receiverid,text)
+
+
+
+    def receiveClientMessage(self, conn):
+        #needs cleanup
+        header = conn.recv(2)
+        FIN = bool(header[0] & 0x80)  # bit 0
+        assert FIN == 1, "We only support unfragmented messages"
+        opcode = header[0] & 0xf  # bits 4-7
+        assert opcode == 1 or opcode == 2, "We only support data messages"
+        masked = bool(header[1] & 0x80)  # bit 8
+        assert masked, "The client must mask all frames"
+        payload_size = header[1] & 0x7f  # bits 9-15
+        assert payload_size <= 125, "We only support small messages"
+        masking_key = conn.recv(4)
+        payload = bytearray(conn.recv(payload_size))
+        for i in range(payload_size):
+            payload[i] = payload[i] ^ masking_key[i % 4]
+        return payload.decode('utf-8')
 
 
     def NewThread(self, conn):
 
         print("New client thread started")
 
+
+        #working
+
+
+
+        # splitted here ONLY splitted = login.split(" ")
+        #working
+
         login = conn.recv(1024).decode('ascii')
+        print(login)
+        print('Creating response')
+
+        conn.sendall(str(self.wsauth.get_response(login)).encode('ascii'))
+        print(str(self.wsauth.get_response(login)))
+
+
+
+
+        print("Websocket handshake successful")
+        #conn.sendall("hello".encode('utf-8'))
+
+
+        message = self.receiveClientMessage(conn)
+        print(message)
+
+
+        conn.send("pong".encode())
+
+
+        #print(str(bytes, encoding="utf8"))
+
+
+        #print(gzip.decompress(response))
+        #bytes = zlib.decompress(response)
+
+
+        time.sleep(100)
+        conn.sendall("hello".encode('ascii'))
+
+
+        time.sleep(30)
         splitted = login.split(" ")
+
+
 
         username = splitted[0]
         password = splitted[1]
@@ -108,8 +176,8 @@ class SocketServer:
 
 
     def run(self):
-        self.HOST = 'localhost'
-        self.PORT = 65000
+        self.HOST = '0.0.0.0'
+        self.PORT = 9999
 
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -137,7 +205,8 @@ class SocketServer:
             print("[-] Connected to " + addr[0] + ":" + str(addr[1]))
             if connection is None:
                 print("Connectin is NULL")
-
+            #Egy probank jo lenne kiprobalni hgoy ha itt hasznalom a connection.bind() ot más portra akkor azon lesz-e a kapcsolat. Ha igen akkor meggyozodni rola hogy
+            #az a port meg van-e nyitva a routeren.
             thread = threading.Thread(target=self.NewThread, args=(connection,))
             thread.start()
 
