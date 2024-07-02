@@ -7,6 +7,7 @@ import gzip
 import zlib
 import pickle
 import random
+import struct
 
 
 
@@ -31,6 +32,22 @@ class SocketServer:
         self.db.writemsg(senderid,receiverid,text)
 
 
+    def sendClientMessage(self,message,connection):
+
+        message_bytes = message.encode('utf-8')
+        length = len(message_bytes)
+        if length <= 125:
+            encoded_bytes = bytearray([129, length])
+        elif length <= 65535:
+            encoded_bytes = bytearray([129, 126, (length >> 8) & 255, length & 255])
+        else:
+            encoded_bytes = bytearray([129, 127]) + length.to_bytes(8, byteorder='big')
+
+        encoded_bytes.extend(message_bytes)
+        connection.sendall(encoded_bytes)
+        #return encoded_bytes
+
+
 
     def receiveClientMessage(self, conn):
         #needs cleanup
@@ -51,6 +68,7 @@ class SocketServer:
 
 
     def NewThread(self, conn):
+
 
         print("New client thread started")
 
@@ -78,9 +96,13 @@ class SocketServer:
 
         message = self.receiveClientMessage(conn)
         print(message)
+        self.sendClientMessage("pon pong pong",conn)
+        self.sendClientMessage("WAS GEHT AB MEIN BRÜDER", conn)
 
 
-        conn.send("pong".encode())
+
+
+        #conn.send("pong".encode())
 
 
         #print(str(bytes, encoding="utf8"))
@@ -90,8 +112,9 @@ class SocketServer:
         #bytes = zlib.decompress(response)
 
 
-        time.sleep(100)
-        conn.sendall("hello".encode('ascii'))
+        time.sleep(15)
+        self.sendClientMessage('teszt teszt tesztelés', conn)
+        #conn.sendall("hello".encode('ascii'))
 
 
         time.sleep(30)
@@ -178,6 +201,8 @@ class SocketServer:
     def run(self):
         self.HOST = '0.0.0.0'
         self.PORT = 9999
+
+
 
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

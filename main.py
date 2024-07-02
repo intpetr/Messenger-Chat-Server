@@ -10,9 +10,9 @@ import pip
 import Pairing
 from SocketServer import SocketServer
 
+
+
 if __name__ == '__main__':
-
-
 
     #maybe databaseconnector should be here in case socketserver crashes
     websocketserver = SocketServer()
